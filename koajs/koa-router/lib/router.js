@@ -53,6 +53,7 @@ function Router(opts) {
     if (!(this instanceof Router)) return new Router(opts);
 
     this.opts = opts || {};
+    // 支持的http request method
     this.methods = this.opts.methods || [
         'HEAD',
         'OPTIONS',
@@ -190,10 +191,17 @@ function Router(opts) {
 
 for (let i = 0; i < methods.length; i++) {
     function setMethodVerb(method) {
+        // 向Router的原型上绑定http method对应的方法，参数为name.path，middleware
         Router.prototype[method] = function(name, path, middleware) {
+            // 如果路径为字符串或者正则，说明传的是完整的3个参数,
+            // 例如 router.get('user', '/users/:id', (ctx, next)=>{});
+            // 从第2项起为middleware
             if (typeof path === "string" || path instanceof RegExp) {
                 middleware = Array.prototype.slice.call(arguments, 2);
             } else {
+                // 否则，传的为2个参数，name，path 
+                // 例如：router.get('/users/:id', (ctx, next)=>{});
+                // 则第1个项起为middleware
                 middleware = Array.prototype.slice.call(arguments, 1);
                 path = name;
                 name = null;
