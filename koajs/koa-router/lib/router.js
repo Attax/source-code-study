@@ -199,14 +199,14 @@ for (let i = 0; i < methods.length; i++) {
             if (typeof path === "string" || path instanceof RegExp) {
                 middleware = Array.prototype.slice.call(arguments, 2);
             } else {
-                // 否则，传的为2个参数，name，path 
+                // 否则，说明没有传递name参数，将第一个参数设置为path，之后的参数归类为middleware
                 // 例如：router.get('/users/:id', (ctx, next)=>{});
-                // 则第1个项起为middleware
+                // 则从第1个项起为middleware
                 middleware = Array.prototype.slice.call(arguments, 1);
                 path = name;
                 name = null;
             }
-
+            //调用路由注册方法
             this.register(path, [method], middleware, {
                 name: name
             });
@@ -249,28 +249,43 @@ Router.prototype.del = Router.prototype['delete'];
  * @param {Function=} ...
  * @returns {Router}
  */
-
+// 绑定use方法  例如：router.use([path],middleware)
 Router.prototype.use = function() {
     const router = this;
+    //获取use方法的全部参数，其中第0项为path或path组成的数组，第1项开始为所有真实的中间件
     const middleware = Array.prototype.slice.call(arguments);
     let path;
 
     // support array of paths
+    //  use方法第0项支持路径数组作为参数，router.use(['/users', '/admin'], userAuth());
+    // 如果第0项为数组，且第0项的第0项为字符串，说明类似 router.use(['/users', '/admin'], userAuth());
+    // 需要循环每一个path，对每一个path调用use方法
     if (Array.isArray(middleware[0]) && typeof middleware[0][0] === 'string') {
+        // path数组
         let arrPaths = middleware[0];
         for (let i = 0; i < arrPaths.length; i++) {
+            // 当前路径
             const p = arrPaths[i];
+            // 按照单路径方式调用router.use方法
+            //[p].concat(middleware.slice(1)) 等同于[当前path,middleware]
             router.use.apply(router, [p].concat(middleware.slice(1)));
         }
-
+        // 返回this 也就是对象本身，以便链式调用 同时也阻止代码向下执行
         return this;
     }
 
+    /**
+     * 上面部分的代码是针对多路径数组的处理，下面的代码才是针对单路径和其他情况的处理
+     * 其他情况类似router.use(session())）这种
+     */
+    // 第0项是字符串，说明是单路径
     const hasPath = typeof middleware[0] === 'string';
+    // 如果是单路径，从middlware中删除第0项作为path,剩下的部分就是全部middleware
     if (hasPath) path = middleware.shift();
-
+    //循环中间件
     for (let i = 0; i < middleware.length; i++) {
         const m = middleware[i];
+        // 如果当前中间件有router属性，说明是路由中间件
         if (m.router) {
             const cloneRouter = Object.assign(Object.create(Router.prototype), m.router, {
                 stack: m.router.stack.slice(0)
@@ -309,7 +324,7 @@ Router.prototype.use = function() {
             });
         }
     }
-
+    // 链式调用
     return this;
 };
 
@@ -501,6 +516,7 @@ Router.prototype.allowedMethods = function(options) {
  */
 
 Router.prototype.all = function(name, path, middleware) {
+    // 如果path是字符串，说明调用模式是all(name,path,middleware)
     if (typeof path === 'string') {
         middleware = Array.prototype.slice.call(arguments, 2);
     } else {
