@@ -65,6 +65,7 @@ function Router(opts) {
     ];
 
     this.params = {};
+    // 设置一个栈，用来存储routes数据z
     this.stack = [];
 };
 
@@ -359,7 +360,7 @@ Router.prototype.prefix = function(prefix) {
  *
  * @returns {Function}
  */
-
+// routes方法等于middlware方法
 Router.prototype.routes = Router.prototype.middleware = function() {
     const router = this;
 
@@ -516,7 +517,7 @@ Router.prototype.allowedMethods = function(options) {
  */
 
 Router.prototype.all = function(name, path, middleware) {
-    // 如果path是字符串，说明调用模式是all(name,path,middleware)
+    // 如果path是字符串，说明调用模式是all(name,path,middleware) 也就是命名路由
     if (typeof path === 'string') {
         middleware = Array.prototype.slice.call(arguments, 2);
     } else {
@@ -555,14 +556,17 @@ Router.prototype.all = function(name, path, middleware) {
  * @param {Number=} code HTTP status code (default: 301).
  * @returns {Router}
  */
-
+// 重定向
 Router.prototype.redirect = function(source, destination, code) {
     // lookup source route by name
+    // 如果source不是以/开头，调用url方法创建一个合法的url
     if (source[0] !== '/') source = this.url(source);
 
     // lookup destination route by name
+    // 如果destination不是以/开头并且不包含:// 调用url方法创建为合法的url
     if (destination[0] !== '/' && !destination.includes('://')) destination = this.url(destination);
 
+    // 符合url规则的所有类型的请求，都将被重定向，默认状态码为301
     return this.all(source, ctx => {
         ctx.redirect(destination);
         ctx.status = code || 301;
@@ -586,6 +590,7 @@ Router.prototype.register = function(path, methods, middleware, opts) {
     const stack = this.stack;
 
     // support array of paths
+    // 如果path是一个数组，遍历每一个路径进行注册
     if (Array.isArray(path)) {
         for (let i = 0; i < path.length; i++) {
             const curPath = path[i];
@@ -628,10 +633,10 @@ Router.prototype.register = function(path, methods, middleware, opts) {
  * @param {String} name
  * @returns {Layer|false}
  */
-
+// 根据指定名称查找对应的路由
 Router.prototype.route = function(name) {
     const routes = this.stack;
-
+    // 遍历所有路由，找到匹配name的路由配置
     for (let len = routes.length, i = 0; i < len; i++) {
         if (routes[i].name && routes[i].name === name) return routes[i];
     }
